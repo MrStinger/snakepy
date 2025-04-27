@@ -13,6 +13,9 @@ class GameSprite(sprite.Sprite):
         self.rect.y = y
     def reset(self):
         window.blit(self.image,(self.rect.x, self.rect.y))
+    
+    def collidepoint(self,x,y):
+        return self.rect.collidepoint(x,y)
 
 
 class Snake(GameSprite):
@@ -81,17 +84,23 @@ class Food(GameSprite):
     def position(self):
         self.rect.x=randint(0,700-self.rect.width)
         self.rect.y=randint(0,500-self.rect.width)
-        self.rand_costumes()        
+        self.rand_costumes()  
+
+font.init()
+font1 = font.SysFont('Arial', 30)      
 
 clock = time.Clock()
 FPS = 60
-head=Snake('snake.png',350,250,25,25,0)
+head = Snake('snake.png',350,250,25,25,0)
+button = GameSprite('playgame.png', 270, 200, 150, 100)
 speed=1
-food=Food(['apple.png','arbuz.png','orange.png'], -100,-100,25,25)
-tail=Snake('tail.png', 350,275,25,25,0)
-snake=[head,tail]
+food = Food(['apple.png','arbuz.png','orange.png'], -100,-100,25,25)
+tail = Snake('tail.png', 350,275,25,25,0)
+snake = [head,tail]
 food.position()
-game=True
+game = True
+menu = True
+finish = True
 wait = 0
 
 
@@ -99,38 +108,64 @@ while game:
     for e in event.get():
             if e.type == QUIT:
                 game = False
+    if not finish:
+        window.fill((255,51,51))
+        head.get_direction()
+        if wait == 0:
+            wait = head.wait
+            for e in range(len(snake)-1, 0, -1):
+                snake[e].direction=snake[e-1].direction
+                snake[e].rect.x=snake[e-1].rect.x
+                snake[e].rect.y=snake[e-1].rect.y
+                snake[e].set_direct()
+            head.update()
+        else:
+            wait -= 1
+        head.reset()
+        food.reset()
+        for s in snake:
+            s.reset()
+        if head.rect.colliderect(food):
+            head.eat(food)
+            s = Snake('tail.png', head.rect.x, head.rect.y, 25, 25, 0)
+            snake.insert(1,s)
+            if speed%2 == 0:
+                head.wait -= 2
+            if head.wait < 10:
+                head.wait = 10
 
-    window.fill((0,102,160))
-    head.get_direction()
-    if wait == 0:
-        wait = head.wait
-    else:
-        wait -= 1
-    head.reset()
-    food.reset()
-    for s in snake:
-        s.reset()
-    if head.rect.colliderect(food):
-        head.eat(food)
-        s = Snake('snake.png', head.rect.x, head.rect.y, 25, 25, 0)
-        snake.insert(1,s)
-        if speed%2 == 0:
-            head.wait -= 2
-        if head.wait < 2:
-            head.wait = 2
+        if head.rect.x < 0:
+            head.rect.x = 700
+        if head.rect.x  > 700:
+            head.rect.x = 0
+        if head.rect.y < 0:
+            head.rect.y = 500
+        if head.rect.y > 500:
+            head.rect.y = 0
+
+        if speed > 1:
+            for i in range(2, len(snake)):
+                if head.rect.colliderect(snake[i]):
+                    finish = True
+                    menu = True
+
+        score_text = font1.render('Счет:'+str(speed-1),1,(0,0,0))
+        window.blit(score_text, (10,10))
 
 
-
-    for e in range(1,len(snake)):
-        snake[e].direction=snake[e-1].direction
-        snake[e].rect.x=snake[e-1].rect.x
-        snake[e].rect.y=snake[e-1].rect.y
-        snake[e].set_direct()
-        print(snake[e].rect.x, snake[e].rect.y)
-    head.update()
-
-score_text = font1.render('Счет:'+str(speed-1),1,(0,0,0))
-window.blit(score_text, (10,10))
+    if menu:
+        window.fill((255,51,51))
+        button.reset()
+        pressed = mouse.get_pressed()
+        pos = mouse.get_pos()
+        if pressed[0]:
+            if button.rect.collidepoint(pos[0], pos[1]):
+                menu = False
+                finish = False
+                snake = [head,tail]
+                head.rect.x = 350
+                head.rect.y =250
+        
 
 
 
